@@ -12,6 +12,7 @@ from views.utils import ApiResult
 from views.exceptions import ApiException
 import views.settings as settings
 from libs.globals import current_bot, _wx_ctx_stack
+from libs.mybot import myBots
 from libs.wx import get_logged_in_user
 from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
