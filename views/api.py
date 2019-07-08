@@ -17,6 +17,7 @@ from libs.mybot import myBots
 from libs.wx import get_logged_in_user
 from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
+from .auths import Auth
 
 from models.core import User, Group, friendship, group_relationship
 from models.messaging import Message, Notification
@@ -98,7 +99,7 @@ def login(bot_id):
     user = get_logged_in_user(bot)
     from wechat.tasks import retrieve_data
     # todo 调用celery，需要传入bot_id
-    retrieve_data.delay()
+    retrieve_data.delay(bot_id)
     sse.publish({'type': 'logged_in', 'user': user}, type='login')
     return {'msg': ''}
 
@@ -106,13 +107,12 @@ def login(bot_id):
 # 系统登录，需要校验用户和密码，返回token
 @json_api.route('/login', methods=['post'])
 def login():
-    bot = myBots.get_bot(bot_id)
-    user = get_logged_in_user(bot)
-    from wechat.tasks import retrieve_data
-    # todo 调用celery，需要传入bot_id
-    retrieve_data.delay()
-    sse.publish({'type': 'logged_in', 'user': user}, type='login')
-    return {'msg': ''}
+    j = request.json
+    r = Auth.authenticate(j["userName"], j["passWord"])
+    if r[0] == 0:
+        return {"token": r[1]}
+    else:
+        return {'msg': r[1]}
 
 
 @json_api.route('/logout', methods=['post'])
@@ -372,15 +372,15 @@ def readall():
     return {}
 
 
-@json_api.route('/flush', methods=['post'])
-def flush():
+@json_api.route('/flush/<bot_id>', methods=['post'])
+def flush(bot_id):
     data = request.get_json()
     type = data['type']
     from wechat.tasks import update_contact, update_group
     if type == 'contact':
-        update_contact.delay(True)
+        update_contact.delay(bot_id, True)
     elif type == 'group':
-        update_group.delay(True)
+        update_group.delay(bot_id, True)
 
     return {}
 

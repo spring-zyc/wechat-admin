@@ -1,10 +1,8 @@
 import jwt
 import datetime
 import time
-from flask import jsonify
 from models.core import LoginUsers
-from .. import config
-from .. import common
+import config
 
 
 class Auth:
@@ -45,7 +43,7 @@ class Auth:
             # payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'), leeway=datetime.timedelta(seconds=10))
             # 取消过期时间验证
             payload = jwt.decode(auth_token, config.SECRET_KEY, options={'verify_exp': False})
-            if ('data' in payload and 'id' in payload['data']):
+            if 'data' in payload and 'id' in payload['data']:
                 return payload
             else:
                 raise jwt.InvalidTokenError
@@ -62,16 +60,16 @@ class Auth:
         """
         userInfo = LoginUsers.query.filter_by(username=username).first()
         if userInfo is None:
-            return jsonify(common.falseReturn('', '找不到用户'))
+            return -1, '找不到用户'
         else:
             if LoginUsers.check_password(userInfo.password, password):
                 login_time = int(time.time())
                 userInfo.login_time = login_time
-                Users.update(Users)
+                # Users.update(Users)
                 token = self.encode_auth_token(userInfo.id, login_time)
-                return jsonify(common.trueReturn(token.decode(), '登录成功'))
+                return 0, token.decode()
             else:
-                return jsonify(common.falseReturn('', '密码不正确'))
+                return -2, '密码不正确'
 
     def identify(self, request):
         """
@@ -79,24 +77,24 @@ class Auth:
         :return: list
         """
         auth_header = request.headers.get('Authorization')
-        if (auth_header):
+        if auth_header:
             auth_tokenArr = auth_header.split(" ")
             if not auth_tokenArr or auth_tokenArr[0] != 'JWT' or len(auth_tokenArr) != 2:
-                result = common.falseReturn('', '请传递正确的验证头信息')
+                result = -1, '请传递正确的验证头信息'
             else:
                 auth_token = auth_tokenArr[1]
                 payload = self.decode_auth_token(auth_token)
                 if not isinstance(payload, str):
-                    user = Users.get(Users, payload['data']['id'])
-                    if (user is None):
-                        result = common.falseReturn('', '找不到该用户信息')
+                    user = LoginUsers.get(payload['data']['id'])
+                    if user is None:
+                        result = -2, '找不到该用户信息'
                     else:
-                        if (user.login_time == payload['data']['login_time']):
-                            result = common.trueReturn(user.id, '请求成功')
+                        if user.login_time == payload['data']['login_time']:
+                            result = 0, user.id  # '请求成功'
                         else:
-                            result = common.falseReturn('', 'Token已更改，请重新登录获取')
+                            result = -3, 'Token已更改，请重新登录获取'
                 else:
-                    result = common.falseReturn('', payload)
+                    result = -4, payload
         else:
-            result = common.falseReturn('', '没有提供认证token')
+            result = -5, '没有提供认证token'
         return result

@@ -6,6 +6,16 @@ from wechat.celery import app
 from wxpy.exceptions import ResponseError
 from itchat.signals import logged_out
 
+from wxpy.signals import stopped
+from libs.wx import gen_avatar_path, get_bot
+from views.api import json_api
+from models.redis import db as r, LISTENER_TASK_KEY
+from app import app as sse_api
+from ext import db, sse
+from models.core import User, Group, MP  # noqa
+from models.messaging import Notification
+from libs.mybot import myBots
+
 
 def restart_listener(sender, **kw):
     task_id = r.get(LISTENER_TASK_KEY)
@@ -16,23 +26,14 @@ def restart_listener(sender, **kw):
 
 
 logged_out.connect(restart_listener)
-
-from wxpy.signals import stopped
-from libs.wx import gen_avatar_path, get_bot
-from views.api import json_api
-from models.redis import db as r, LISTENER_TASK_KEY
-from app import app as sse_api
-from ext import db, sse
-from models.core import User, Group, MP  # noqa
-from models.messaging import Notification
-
 stopped.connect(restart_listener)
 MP_FIELD = ['nick_name', 'signature', 'province', 'city']
 USER_FIELD = MP_FIELD + ['sex']
-bot = get_bot()
+# bot = get_bot()
 
 
-def _retrieve_data(update=False):
+def _retrieve_data(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     _update_contact(bot, update)
     _update_group(bot, update)
     _update_mp(bot, update)
@@ -145,38 +146,44 @@ def _update_contact(bot, update=False):
 
 
 @app.task
-def listener():
-    from libs.listener import bot
+def listener(bot_id):
+    bot = myBots.get_bot(bot_id)
+    # from libs.listener import bot
     with json_api.app_context():
         bot.join()
 
 
 @app.task
-def retrieve_data():
+def retrieve_data(bot_id):
+    bot = myBots.get_bot(bot_id)
     with json_api.app_context():
-        _retrieve_data(True)
+        _retrieve_data(bot, True)
 
 
 @app.task
-def update_contact(update=False):
+def update_contact(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     with json_api.app_context():
         _update_contact(bot, update=update)
 
 
 @app.task
-def update_group(update=False):
+def update_group(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     with json_api.app_context():
         _update_group(bot, update=update)
 
 
 @app.task
-def update_mp(update=False):
+def update_mp(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     with json_api.app_context():
         _update_mp(bot, update=update)
 
 
 @periodic_task(run_every=timedelta(seconds=60), time_limit=5)
 def send_notify():
-    count = Notification.count_by_receiver_id(bot.self.puid)
-    with sse_api.app_context():
-        sse.publish({'count': count}, type='notification')
+    for bot_id, bot in myBots.bots:
+        count = Notification.count_by_receiver_id(bot.self.puid)
+        with sse_api.app_context():
+            sse.publish({'count': count}, type='notification')

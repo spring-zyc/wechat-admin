@@ -1,5 +1,7 @@
 import os
 
+SECRET_KEY = "my blog"
+
 HERE = os.path.abspath(os.path.dirname(__file__))
 DEBUG = True
 SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://b2bdev:Dev!2345@/120.26.50.66/weixin?charset=utf8mb4'  # noqa
