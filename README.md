@@ -104,7 +104,7 @@ mysql> ^DBye
 
 ```python
 ❯ export FLASK_APP=manager.py
-❯ venv/bin/flask initdb
+❯ venv/bin/flask db init
 ```
 
 启动服务：

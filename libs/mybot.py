@@ -4,6 +4,7 @@ from wxpy.api.messages import MessageConfig
 from loguru import logger
 import uuid
 import os
+from .mylistener import init_listener
 
 
 class MyBot:
@@ -30,6 +31,7 @@ class MyBot:
         self.bots[bid] = bot
         if self.default_bot is None:
             self.default_bot = bot
+        init_listener(bot)
         return bid, bot
 
     def do_register(self, func, chats=None, msg_types=None,

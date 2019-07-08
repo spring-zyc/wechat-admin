@@ -11,5 +11,6 @@ mkdocs==0.16.3
 mkdocs-material==1.7.4
 uuid
 loguru
+PyJWT
 -e git+https://github.com/dongweiming/wxpy@signals#egg=wxpy
 -e git+https://github.com/dongweiming/ItChat@signals#egg=itchat

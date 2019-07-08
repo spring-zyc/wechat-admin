@@ -5,6 +5,7 @@ from flask import Flask, request
 from flask.views import MethodView
 from flask_sqlalchemy import get_debug_queries
 from sqlalchemy import and_
+import jwt
 
 import config
 import views.errors as errors
@@ -90,10 +91,25 @@ def error_handler(error):
     return ApiResult({'message': msg}, status=code)
 
 
+# 登录微信
+@json_api.route('/login/wx/<bot_id>', methods=['post'])
+def login(bot_id):
+    bot = myBots.get_bot(bot_id)
+    user = get_logged_in_user(bot)
+    from wechat.tasks import retrieve_data
+    # todo 调用celery，需要传入bot_id
+    retrieve_data.delay()
+    sse.publish({'type': 'logged_in', 'user': user}, type='login')
+    return {'msg': ''}
+
+
+# 系统登录，需要校验用户和密码，返回token
 @json_api.route('/login', methods=['post'])
 def login():
-    user = get_logged_in_user(current_bot)
+    bot = myBots.get_bot(bot_id)
+    user = get_logged_in_user(bot)
     from wechat.tasks import retrieve_data
+    # todo 调用celery，需要传入bot_id
     retrieve_data.delay()
     sse.publish({'type': 'logged_in', 'user': user}, type='login')
     return {'msg': ''}
