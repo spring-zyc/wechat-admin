@@ -6,7 +6,7 @@ celery==4.0.2
 PyMySQL==0.7.11
 gunicorn==19.7.1
 msgpack-python==0.4.8
-walrus
+walrus==0.4.1
 mkdocs==0.16.3
 mkdocs-material==1.7.4
 uuid

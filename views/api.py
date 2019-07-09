@@ -13,7 +13,7 @@ from views.utils import ApiResult
 from views.exceptions import ApiException
 import views.settings as settings
 from libs.globals import current_bot, _wx_ctx_stack
-from libs.mybot import myBots
+import libs.mybot as mybot
 from libs.wx import get_logged_in_user
 from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
@@ -94,8 +94,8 @@ def error_handler(error):
 
 # 登录微信
 @json_api.route('/login/wx/<bot_id>', methods=['post'])
-def login(bot_id):
-    bot = myBots.get_bot(bot_id)
+def login_wx(bot_id):
+    bot = mybot.myBots.get_bot(bot_id)
     user = get_logged_in_user(bot)
     from wechat.tasks import retrieve_data
     # todo 调用celery，需要传入bot_id
@@ -106,7 +106,7 @@ def login(bot_id):
 
 # 系统登录，需要校验用户和密码，返回token
 @json_api.route('/login', methods=['post'])
-def login():
+def login_sys():
     j = request.json
     r = Auth.authenticate(j["userName"], j["passWord"])
     if r[0] == 0:
@@ -115,8 +115,8 @@ def login():
         return {'msg': r[1]}
 
 
-@json_api.route('/logout', methods=['post'])
-def logout():
+@json_api.route('/logout/<bot_id>', methods=['post'])
+def logout(bot_id):
     _wx_ctx_stack.pop()
     for f in glob.glob('{}/*.pkl'.format(here)):
         try:

@@ -9,7 +9,7 @@ from wxpy.api import consts
 
 from config import PLUGIN_PATHS, PLUGINS, GROUP_MEMBERS_LIMIT
 from libs.consts import *  # noqa
-from libs.mybot import myBots
+import libs.mybot as b
 from models.setting import GroupSettings
 from models.redis import db as r
 from models.core import User
@@ -30,8 +30,8 @@ class SettingWrapper:
     def pattern_map(self):
         return {p: tmpl for p, tmpl in settings.group_patterns}
 
-
-settings = SettingWrapper(myBots.get_default_bot())
+bot = b.myBots.get_default_bot()
+settings = SettingWrapper(bot)
 new_member_regex = re.compile(r'^"(.+)"通过|邀请"(.+)"加入')
 kick_member_regex = re.compile(r'^(移出|移除|踢出|T)(\s*)@(.+?)(?:\u2005?\s*$)')
 all_types = [k.capitalize()

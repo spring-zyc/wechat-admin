@@ -6,7 +6,7 @@ from ext import db
 
 migrate = Migrate(app, db)
 
-from models import *  # noqa
+# from models import *  # noqa
 
 
 @app.cli.command()
