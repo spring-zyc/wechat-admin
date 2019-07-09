@@ -102,7 +102,11 @@ def login_wx(bot_id):
     retrieve_data.delay(bot_id)
     sse.publish({'type': 'logged_in', 'user': user}, type='login')
     return {'msg': ''}
-
+# 所有登录的微信
+@json_api.route('/wxes/', methods=['GET'])
+def get_wx():
+    r = [{"nick_name":bot.self.nick_name,"name":bot.self.name,"puid": bot.self.puid } for bot in mybot.myBots.bots.values() ]
+    return {'data': r}
 
 # 系统登录，需要校验用户和密码，返回token
 @json_api.route('/login', methods=['post'])
