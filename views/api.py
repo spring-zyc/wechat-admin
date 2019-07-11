@@ -18,6 +18,8 @@ from libs.wx import get_logged_in_user
 from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
 from .auths import Auth
+from models.core import LoginUser
+import datetime
 
 from models.core import User, Group, friendship, group_relationship
 from models.messaging import Message, Notification
@@ -117,6 +119,16 @@ def login_sys():
         return {"token": r[1]}
     else:
         return {'msg': r[1]}
+
+
+@json_api.route('/register', methods=['post'])
+def register():
+    try:
+        j = request.json
+        user = LoginUser(None, j["userName"], j["passWord"], j['email'])
+        user.add()
+        Auth.encode_auth_token(user.id, datetime.time)
+        return {'code': 600, 'msg': "注册成功！"}
 
 
 @json_api.route('/logout/<bot_id>', methods=['post'])

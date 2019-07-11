@@ -152,7 +152,7 @@ class MP(CoreMixin, db.Model):
         return '<MP %r>' % self.nick_name
 
 
-class LoginUsers(CoreMixin, db.Model):
+class LoginUser(db.Model):
     __tablename__ = 'login_user'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(250),  unique=True, nullable=False)
@@ -170,16 +170,16 @@ class LoginUsers(CoreMixin, db.Model):
         return "Users(id='%s')" % self.id
 
     def set_password(self, password):
-        return generate_password_hash(password)
+        self.password = generate_password_hash(password)
 
     def check_password(self, hash, password):
         return check_password_hash(hash, password)
 
-    def get(self, id):
-        return self.query.filter_by(id=id).first()
+    def get(self, username):
+        return self.query.filter_by(username=username).first()
 
-    def add(self, user):
-        db.session.add(user)
+    def add(self):
+        db.session.add(self)
         return session_commit()
 
 
