@@ -20,6 +20,7 @@ from ext import db, sse
 from .auths import Auth
 from models.core import LoginUser
 import datetime
+from loguru import logger
 
 from models.core import User, Group, friendship, group_relationship
 from models.messaging import Message, Notification
@@ -127,8 +128,11 @@ def register():
         j = request.json
         user = LoginUser(None, j["userName"], j["passWord"], j['email'])
         user.add()
-        Auth.encode_auth_token(user.id, datetime.time)
-        return {'code': 600, 'msg': "注册成功！"}
+        token = Auth.encode_auth_token(user.id, datetime.time)
+        return {'code': 600, 'msg': "注册成功！", 'data': token}
+    except Exception as e:
+        logger.info(e)
+        return {'code': 601, 'msg': "注册失败！", 'data': None}
 
 
 @json_api.route('/logout/<bot_id>', methods=['post'])
