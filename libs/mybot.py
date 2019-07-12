@@ -6,15 +6,14 @@ import uuid
 import os
 
 
-
 class MyBot:
 
     def __init__(self):
         self.bots = {}
         self.default_bot = None
 
-    def get_bot(self,uuid):
-        bot = self.bots[uuid]
+    def get_bot(self, bot_id):
+        bot = self.bots[bot_id]
         if bot:
             return bot
         else:
@@ -22,18 +21,22 @@ class MyBot:
             return None
 
     def create_bot(self):
-        bid = uuid.uuid1()
+        bot_id = uuid.uuid1()
         here = os.path.abspath(os.path.dirname(__file__))
-        bot = Bot('bot_{}.pkl'.format(bid), qr_path=os.path.join(
-            here, '../static/img/qr_code_{}.png'.format(bid)), console_qr=None)
+        bot = Bot('bot_{}.pkl'.format(bot_id), qr_path=os.path.join(
+            here, '../static/img/qr_code_{}.png'.format(bot_id)), console_qr=None)
         bot.enable_puid()
         bot.messages.max_history = 0
-        self.bots[bid] = bot
-        if self.default_bot is None:
-            self.default_bot = bot
+        self.add_bot(bot_id, bot)
+        return bot_id, bot
+
+    def add_bot(self, bot_id, bot):
+        self.bots[bot_id] = bot
         from .mylistener import init_listener
         init_listener(bot)
-        return bid, bot
+
+    def remove_bot(self, bot_uuid):
+        del self.bots[bot_uuid]
 
     def do_register(self, func, chats=None, msg_types=None,
                     except_self=True, run_async=True, enabled=True):

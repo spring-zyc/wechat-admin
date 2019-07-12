@@ -14,14 +14,9 @@ def create_app():
 
     app.register_blueprint(home.bp)
     app.register_blueprint(sse, url_prefix='/stream')
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, OrderedDict((
-        ('/j', json_api),
-    )))
-    app.add_url_rule('/uploads/<filename>', 'uploaded_file',
-                     build_only=True)
-    app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-        '/uploads': app.config['UPLOAD_FOLDER']
-    })
+    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, OrderedDict((('/j', json_api),)))
+    app.add_url_rule('/uploads/<filename>', 'uploaded_file', build_only=True)
+    app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {'/uploads': app.config['UPLOAD_FOLDER']})
     return app
 
 

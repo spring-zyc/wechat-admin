@@ -1,7 +1,7 @@
 import jwt
 import datetime
 import time
-from models.core import LoginUsers
+from models.core import LoginUser
 import config
 
 
@@ -52,26 +52,29 @@ class Auth:
         except jwt.InvalidTokenError:
             return '无效Token'
 
-    def authenticate(self, username, password):
+    @staticmethod
+    def authenticate(username, password):
         """
         用户登录，登录成功返回token，写将登录时间写入数据库；登录失败返回失败原因
         :param password:
         :return: json
         """
-        userInfo = LoginUsers.query.filter_by(username=username).first()
+        userInfo = LoginUser.query.filter_by(username=username).first()
         if userInfo is None:
             return -1, '找不到用户'
         else:
-            if LoginUsers.check_password(userInfo.password, password):
+            if userInfo.check_password(password):
                 login_time = int(time.time())
                 userInfo.login_time = login_time
-                # Users.update(Users)
-                token = self.encode_auth_token(userInfo.id, login_time)
+                if not userInfo.update():
+                    return -6, "登录时间更新失败"
+                token = Auth.encode_auth_token(userInfo.id, login_time)
                 return 0, token.decode()
             else:
                 return -2, '密码不正确'
 
-    def identify(self, request):
+    @staticmethod
+    def identify(request):
         """
         用户鉴权
         :return: list
@@ -79,13 +82,13 @@ class Auth:
         auth_header = request.headers.get('Authorization')
         if auth_header:
             auth_tokenArr = auth_header.split(" ")
-            if not auth_tokenArr or auth_tokenArr[0] != 'JWT' or len(auth_tokenArr) != 2:
+            if not auth_tokenArr or auth_tokenArr[0] != 'Bearer' or len(auth_tokenArr) != 2:
                 result = -1, '请传递正确的验证头信息'
             else:
                 auth_token = auth_tokenArr[1]
-                payload = self.decode_auth_token(auth_token)
+                payload = Auth.decode_auth_token(auth_token)
                 if not isinstance(payload, str):
-                    user = LoginUsers.get(payload['data']['id'])
+                    user = LoginUser.query.filter_by(id=payload['data']['id']).first()
                     if user is None:
                         result = -2, '找不到该用户信息'
                     else:

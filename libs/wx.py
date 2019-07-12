@@ -21,6 +21,15 @@ def publish(uuid, **kw):
         sse.publish(params, type='login')
 
 
+def process_qr_code(uuid, **kw):
+    from app import app
+    with app.app_context():
+        params = {'uuid': uuid, 'extra': kw.pop('extra', None),
+                  'type': kw.pop('type', None)}
+        params.update(kw)
+        sse.publish(params, type='login')
+
+
 scan_qr_code.connect(publish)
 confirm_login.connect(publish)
 logged_out.connect(publish)

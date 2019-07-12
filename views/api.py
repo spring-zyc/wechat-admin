@@ -1,7 +1,7 @@
 # coding=utf-8
 import os
 import glob
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask.views import MethodView
 from flask_sqlalchemy import get_debug_queries
 from sqlalchemy import and_
@@ -38,12 +38,21 @@ class ApiFlask(Flask):
 
     def make_response(self, rv):
         if isinstance(rv, dict):
-            if 'r' not in rv:
-                rv['r'] = 0
+            # if 'r' not in rv:
+            #     rv['r'] = 0
             rv = ApiResult(rv)
         if isinstance(rv, ApiResult):
             return rv.to_response()
         return Flask.make_response(self, rv)
+
+
+def check_token(fn):
+    def do_check(*args):
+        r = Auth.identify(request)
+        if r[0] != 0:
+            return {'code': 601, 'msg': r[1], 'data': None}
+        return fn(*args)
+    return do_check
 
 
 def create_app():
@@ -96,20 +105,22 @@ def error_handler(error):
 
 
 # 登录微信
-@json_api.route('/login/wx/<bot_id>', methods=['post'])
-def login_wx(bot_id):
-    bot = mybot.myBots.get_bot(bot_id)
-    user = get_logged_in_user(bot)
-    from wechat.tasks import retrieve_data
-    # todo 调用celery，需要传入bot_id
-    retrieve_data.delay(bot_id)
-    sse.publish({'type': 'logged_in', 'user': user}, type='login')
+@json_api.route('/login/wx', methods=['get'])
+@check_token
+def login_wx():
+    bot = mybot.myBots.create_bot()
+
     return {'msg': ''}
+
+
 # 所有登录的微信
+@check_token
 @json_api.route('/wxes/', methods=['GET'])
 def get_wx():
-    r = [{"nick_name":bot.self.nick_name,"name":bot.self.name,"puid": bot.self.puid } for bot in mybot.myBots.bots.values() ]
-    return {'data': r}
+    r = [{"nick_name": bot.self.nick_name, "name": bot.self.name, "puid": bot.self.puid}
+         for bot in mybot.myBots.bots.values()]
+    return {'code': 600, 'msg': "bot列表获取成功", 'data': r}
+
 
 # 系统登录，需要校验用户和密码，返回token
 @json_api.route('/login', methods=['post'])
@@ -127,23 +138,30 @@ def register():
     try:
         j = request.json
         user = LoginUser(None, j["userName"], j["passWord"], j['email'])
-        user.add()
-        token = Auth.encode_auth_token(user.id, datetime.time)
-        return {'code': 600, 'msg': "注册成功！", 'data': token}
+        if user.add():
+            token = Auth.encode_auth_token(user.id, datetime.time)
+            return jsonify({'code': 600, 'msg': "注册成功！", 'data': token})
+        else:
+            return jsonify({'code': 601, 'msg': "注册失败！", 'data': None})
     except Exception as e:
         logger.info(e)
-        return {'code': 601, 'msg': "注册失败！", 'data': None}
+        return jsonify({'code': 601, 'msg': "注册失败！", 'data': e})
 
 
 @json_api.route('/logout/<bot_id>', methods=['post'])
 def logout(bot_id):
-    _wx_ctx_stack.pop()
-    for f in glob.glob('{}/*.pkl'.format(here)):
-        try:
-            os.remove(f)
-        except FileNotFoundError:
-            pass
-    return {'msg': ''}
+    try:
+        # _wx_ctx_stack.pop()
+        mybot.myBots.remove_bot(bot_id)
+        for f in glob.glob('{}/bot_{}.pkl'.format(here,bot_id)):
+            try:
+                os.remove(f)
+            except FileNotFoundError:
+                pass
+        return {'code': 600, 'msg': "登出成功！", 'data': None}
+    except Exception as e:
+        logger.info(e)
+        return {'code': 601, 'msg': "登出失败！", 'data': e}
 
 
 class UsersAPI(MethodView):

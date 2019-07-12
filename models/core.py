@@ -1,6 +1,6 @@
 from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from loguru import logger
 from ext import db
 from config import avatar_tmpl
 from .mixin import BaseMixin
@@ -163,7 +163,7 @@ class LoginUser(db.Model):
     def __init__(self, id, username, password, email):
         self.id = id
         self.username = username
-        self.password = password
+        self.password = generate_password_hash(password)
         self.email = email
 
     def __str__(self):
@@ -172,8 +172,8 @@ class LoginUser(db.Model):
     def set_password(self, password):
         self.password = generate_password_hash(password)
 
-    def check_password(self, hash, password):
-        return check_password_hash(hash, password)
+    def check_password(self, password):
+        return check_password_hash(self.password, password)
 
     def get(self, username):
         return self.query.filter_by(username=username).first()
@@ -182,11 +182,16 @@ class LoginUser(db.Model):
         db.session.add(self)
         return session_commit()
 
+    def update(self):
+        db.session.add(self)
+        return session_commit()
+
 
 def session_commit():
     try:
         db.session.commit()
-    except SQLAlchemyError as e:
+        return True
+    except Exception as e:
         db.session.rollback()
-        reason = str(e)
-        return reason
+        logger.info(e)
+        return False

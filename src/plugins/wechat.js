@@ -23,11 +23,11 @@ function eventSourceListener() {
         let data = JSON.parse(event.data);
         if (data.type == 'scan_qr_code') {
             self.uuid = data.uuid;
-            self.qrCode = `data:image/png;base64,${data.extra}`;
+            self.qrCode = `data:image/png;base64,${data.extra}`;//二维码
         } else if (data.type == 'confirm_login') {
             self.sub_title = 'Scan successful';
             self.sub_desc = 'Confirm login on mobile WeChat';
-            self.qrCode = data.extra;
+            self.qrCode = data.extra;//头像
         } else if (data.type == 'logged_in') {
             sessionStorage.setItem('user', JSON.stringify(data.user));
             self.$router.push({ path: '/main' });
