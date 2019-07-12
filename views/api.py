@@ -108,9 +108,9 @@ def error_handler(error):
 @json_api.route('/login/wx', methods=['get'])
 @check_token
 def login_wx():
-    bot = mybot.myBots.create_bot()
+    bot_id, bot_puid = mybot.myBots.create_bot()
 
-    return {'msg': ''}
+    return {"code": 600, "msg": "微信登录完成", "data": {'bot_id': bot_id, "bot_puid": bot_puid}}
 
 
 # 所有登录的微信

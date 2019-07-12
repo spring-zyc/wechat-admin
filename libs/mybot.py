@@ -27,16 +27,16 @@ class MyBot:
             here, '../static/img/qr_code_{}.png'.format(bot_id)), console_qr=None)
         bot.enable_puid()
         bot.messages.max_history = 0
-        self.add_bot(bot_id, bot)
-        return bot_id, bot
+        self.add_bot(bot.self.puid, bot)
+        return bot_id, bot.self.puid
 
     def add_bot(self, bot_id, bot):
         self.bots[bot_id] = bot
         from .mylistener import init_listener
         init_listener(bot)
 
-    def remove_bot(self, bot_uuid):
-        del self.bots[bot_uuid]
+    def remove_bot(self, bot_puid):
+        del self.bots[bot_puid]
 
     def do_register(self, func, chats=None, msg_types=None,
                     except_self=True, run_async=True, enabled=True):
