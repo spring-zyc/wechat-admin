@@ -28,7 +28,7 @@ class MyBot:
         bot.enable_puid()
         bot.messages.max_history = 0
         self.add_bot(bot.self.puid, bot)
-        return bot_id, bot.self.puid
+        return bot_id, bot
 
     def add_bot(self, bot_id, bot):
         self.bots[bot_id] = bot

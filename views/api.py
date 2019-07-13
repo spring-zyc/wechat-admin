@@ -104,20 +104,21 @@ def error_handler(error):
     return ApiResult({'message': msg}, status=code)
 
 
-# 登录微信
+# 登录微信，登录成功后跳转主页，不用sse触发
+# todo 增加系统用户维度，不同用户可以管理不同的微信
 @json_api.route('/login/wx', methods=['get'])
 @check_token
 def login_wx():
-    bot_id, bot_puid = mybot.myBots.create_bot()
-
-    return {"code": 600, "msg": "微信登录完成", "data": {'bot_id': bot_id, "bot_puid": bot_puid}}
+    bot_id, bot = mybot.myBots.create_bot()
+    user = get_logged_in_user(bot)
+    return {"code": 600, "msg": "微信登录完成", "data": {'bot_id': bot_id, "user": user}}
 
 
 # 所有登录的微信
 @check_token
 @json_api.route('/wxes/', methods=['GET'])
 def get_wx():
-    r = [{"nick_name": bot.self.nick_name, "name": bot.self.name, "puid": bot.self.puid}
+    r = [get_logged_in_user(bot)
          for bot in mybot.myBots.bots.values()]
     return {'code': 600, 'msg': "bot列表获取成功", 'data': r}
 
@@ -152,6 +153,9 @@ def register():
 def logout(bot_id):
     try:
         # _wx_ctx_stack.pop()
+        bot = mybot.myBots.get_bot(bot_id)
+        if bot:
+            bot.logout()
         mybot.myBots.remove_bot(bot_id)
         for f in glob.glob('{}/bot_{}.pkl'.format(here,bot_id)):
             try:

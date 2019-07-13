@@ -186,4 +186,4 @@ def send_notify():
     for bot_id, bot in myBots.bots:
         count = Notification.count_by_receiver_id(bot.self.puid)
         with sse_api.app_context():
-            sse.publish({'count': count}, type='notification')
+            sse.publish({'puid': bot.self.puid, 'count': count}, type='notification')

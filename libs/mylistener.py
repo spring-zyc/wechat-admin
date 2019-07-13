@@ -1,7 +1,6 @@
 # coding=utf-8
 import os
 import re
-import sys
 from datetime import datetime
 
 from wxpy import Friend, Group, MP as _MP, sync_message_in_groups
@@ -30,8 +29,7 @@ class SettingWrapper:
     def pattern_map(self):
         return {p: tmpl for p, tmpl in settings.group_patterns}
 
-bot = b.myBots.get_default_bot()
-settings = SettingWrapper(bot)
+
 new_member_regex = re.compile(r'^"(.+)"通过|邀请"(.+)"加入')
 kick_member_regex = re.compile(r'^(移出|移除|踢出|T)(\s*)@(.+?)(?:\u2005?\s*$)')
 all_types = [k.capitalize()
@@ -43,10 +41,8 @@ if not os.path.exists(UPLOAD_PATH):
 KICK_KEY = 'kick:members'
 KICK_SENDER_KEY = 'kick:senders'
 
-groups = [g for g in bot.groups() if g.is_owner]
 
-
-def get_creators():
+def get_creators(settings, bot):
     creator_ids = settings.creators
     try:
         creators = list(map(lambda x: bot.friends().search(puid=x)[0],
@@ -66,7 +62,7 @@ def get_time():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
-def invite(user, pattern):
+def invite(user, bot, pattern):
     groups = sorted(bot.groups(update=True).search(pattern),
                     key=lambda x: x.name)
     if len(groups) > 0:
@@ -93,6 +89,8 @@ def invite(user, pattern):
 
 
 def init_listener(bot):
+    settings = SettingWrapper(bot)
+    groups = [g for g in bot.groups() if g.is_owner]
 
     @bot.register(msg_types=FRIENDS)
     def new_friends(msg):
@@ -111,7 +109,7 @@ def init_listener(bot):
         pattern = next(
             (p for p in settings.pattern_map if p in msg.text.lower()), None)
         if pattern is not None:
-            invite(msg.sender, pattern)
+            invite(msg.sender, bot, pattern)
 
     @bot.register(groups, NOTE)
     def welcome(msg):
