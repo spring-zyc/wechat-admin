@@ -19,7 +19,7 @@ from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
 from .auths import Auth
 from models.core import LoginUser
-import datetime
+import time
 from loguru import logger
 
 from models.core import User, Group, friendship, group_relationship
@@ -140,13 +140,13 @@ def register():
         j = request.json
         user = LoginUser(None, j["userName"], j["passWord"], j['email'])
         if user.add():
-            token = Auth.encode_auth_token(user.id, datetime.time)
-            return jsonify({'code': 600, 'msg': "注册成功！", 'data': token})
+            token = Auth.encode_auth_token(user.id, int(time.time()))
+            return {'code': 600, 'msg': "注册成功！", 'data': token}
         else:
-            return jsonify({'code': 601, 'msg': "注册失败！", 'data': None})
+            return {'code': 601, 'msg': "注册失败！", 'data': None}
     except Exception as e:
         logger.info(e)
-        return jsonify({'code': 601, 'msg': "注册失败！", 'data': e})
+        return {'code': 601, 'msg': "注册失败！", 'data': e}
 
 
 @json_api.route('/logout/<bot_id>', methods=['post'])

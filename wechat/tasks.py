@@ -181,7 +181,7 @@ def update_mp(bot_id, update=False):
         _update_mp(bot, update=update)
 
 
-@periodic_task(run_every=timedelta(seconds=60), time_limit=5)
+@periodic_task(run_every=timedelta(seconds=10), time_limit=2)
 def send_notify():
     for bot_id, bot in myBots.bots:
         count = Notification.count_by_receiver_id(bot.self.puid)

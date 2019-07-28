@@ -17,10 +17,9 @@ import descBlock from './components/desc-block.vue';
 Vue.use(ElementUI)
 Vue.use(VueRouter)
 Vue.use(Vuex)
+
 Vue.use(Wechat)
-
 Vue.component('desc-block', descBlock)
-
 Vue.prototype.emoji = emoji;
 
 const router = new VueRouter({
