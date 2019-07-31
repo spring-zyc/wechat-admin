@@ -19,6 +19,7 @@ from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
 from .auths import Auth
 from models.core import LoginUser
+from models.utils import serialize
 import time
 from loguru import logger
 
@@ -105,18 +106,18 @@ def error_handler(error):
 
 
 # 登录微信，登录成功后跳转主页，不用sse触发
-# todo 增加系统用户维度，不同用户可以管理不同的微信
+# todo 增加系统用户维度，不同用户可以管理不同的微信,目前系统用户只是为了信息安全
 @json_api.route('/login/wx', methods=['get'])
 @check_token
 def login_wx():
     bot_id, bot = mybot.myBots.create_bot()
-    user = get_logged_in_user(bot)
-    return {"code": 600, "msg": "微信登录完成", "data": {'bot_id': bot_id, "user": user}}
+    wxuser = get_logged_in_user(bot)
+    return {"code": 600, "msg": "微信登录完成", "data": wxuser}
 
 
 # 所有登录的微信
 @check_token
-@json_api.route('/wxes/', methods=['GET'])
+@json_api.route('/wxes', methods=['get'])
 def get_wx():
     r = [get_logged_in_user(bot)
          for bot in mybot.myBots.bots.values()]
@@ -127,11 +128,11 @@ def get_wx():
 @json_api.route('/login', methods=['post'])
 def login_sys():
     j = request.json
-    r = Auth.authenticate(j["userName"], j["passWord"])
+    r = Auth.authenticate(j["username"], j["password"])
     if r[0] == 0:
-        return {"token": r[1]}
+        return {"code": 600, "msg": "登录成功", "data": {"token": "Bearer {}".format(r[1])}}
     else:
-        return {'msg': r[1]}
+        return {"code": 601, "msg": r[1], "data": None }
 
 
 @json_api.route('/register', methods=['post'])
@@ -147,6 +148,19 @@ def register():
     except Exception as e:
         logger.info(e)
         return {'code': 601, 'msg': "注册失败！", 'data': e}
+
+
+@json_api.route('/userInfo', methods=['post'])
+def user_info():
+    try:
+        user = Auth.identify(request)
+        if user[0] == 0:
+            return {'code': 600, 'msg': "获取用户信息成功！", 'data': serialize(user[1])}
+        else:
+            return {'code': 601, 'msg': "获取用户信息失败！", 'data': None}
+    except Exception as e:
+        logger.info(e)
+        return {'code': 601, 'msg': "获取用户信息失败！", 'data': e}
 
 
 @json_api.route('/logout/<bot_id>', methods=['post'])

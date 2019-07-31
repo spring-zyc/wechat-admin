@@ -18,6 +18,7 @@ def publish(uuid, **kw):
         params = {'uuid': uuid, 'extra': kw.pop('extra', None),
                   'type': kw.pop('type', None)}
         params.update(kw)
+        print("sse public params" + params)
         sse.publish(params, type='login')
 
 
@@ -68,6 +69,7 @@ def get_logged_in_user(bot):
     user = {
         'id': id,
         'avatar': url,
+        'nick': user_.nick_name,
         'name': user_.nick_name
     }
     return user

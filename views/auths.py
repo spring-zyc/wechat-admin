@@ -93,7 +93,7 @@ class Auth:
                         result = -2, '找不到该用户信息'
                     else:
                         if user.login_time == payload['data']['login_time']:
-                            result = 0, user.id  # '请求成功'
+                            result = 0, user  # '请求成功'
                         else:
                             result = -3, 'Token已更改，请重新登录获取'
                 else:
