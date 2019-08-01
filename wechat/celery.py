@@ -10,8 +10,8 @@ app.config_from_object('wechat.celeryconfig')
 # @worker_ready.connect
 def at_start(sender, **k):
     with sender.app.connection() as conn:  # noqa
-        task_id = sender.app.send_task('wechat.tasks.listener')
-        db.set(LISTENER_TASK_KEY, task_id)
+        task_id = sender.app.send_task('wechat.tasks.listener', [sender])
+        db.set(LISTENER_TASK_KEY + sender, task_id)
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ from walrus import Database, Model, ListField, SetField, HashField
 from config import REDIS_URL
 
 db = Database.from_url(REDIS_URL)
-LISTENER_TASK_KEY = 'listener:task_id'
+LISTENER_TASK_KEY = 'listener:task_id:'
 
 
 class RBase(Model):

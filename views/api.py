@@ -20,6 +20,7 @@ from ext import db, sse
 from .auths import Auth
 from models.core import LoginUser
 from models.utils import serialize
+
 import time
 from loguru import logger
 
@@ -112,18 +113,19 @@ def error_handler(error):
 def login_wx():
     bot_id, bot = mybot.myBots.create_bot()
     wxuser = get_logged_in_user(bot)
-    from wechat.tasks import retrieve_data, listener
-    listener.delay(bot)
-    retrieve_data.delay(bot)
+    from wechat.tasks import listener, retrieve_data
+    listener.delay(bot.self.puid)
+    retrieve_data.delay(bot.self.puid)
     return {"code": 600, "msg": "微信登录完成", "data": wxuser}
 
 
-# 所有登录的微信
+# 所有已登录的微信
 @check_token
 @json_api.route('/wxes', methods=['get'])
 def get_wx():
     r = [get_logged_in_user(bot)
          for bot in mybot.myBots.bots.values()]
+    sse.publish({"msg": "test"}, type='test')
     return {'code': 600, 'msg': "bot列表获取成功", 'data': r}
 
 
@@ -166,20 +168,22 @@ def user_info():
         return {'code': 601, 'msg': "获取用户信息失败！", 'data': e}
 
 
-@json_api.route('/logout/wx/<bot_id>', methods=['post'])
-def logout(bot_id):
+@json_api.route('/logout/wx/<puid>', methods=['post'])
+def logout(puid):
     try:
         # _wx_ctx_stack.pop()
-        bot = mybot.myBots.get_bot(bot_id)
+        bot = mybot.myBots.get_bot(puid)
         if bot:
             bot.logout()
-        mybot.myBots.remove_bot(bot_id)
-        for f in glob.glob('{}/bot_{}.pkl'.format(here,bot_id)):
-            try:
-                os.remove(f)
-            except FileNotFoundError:
-                pass
-        return {'code': 600, 'msg': "登出成功！", 'data': None}
+            mybot.myBots.remove_bot(puid)
+            for f in glob.glob('{}/bot_{}.pkl'.format(here,bot_id)):
+                try:
+                    os.remove(f)
+                except FileNotFoundError:
+                    pass
+            return {'code': 600, 'msg': "登出成功！", 'data': None}
+        else:
+            return {'code': 601, 'msg': "没有找到微信bot！", 'data': None}
     except Exception as e:
         logger.info(e)
         return {'code': 601, 'msg': "登出失败！", 'data': e}
@@ -340,21 +344,21 @@ class UserAPI(MethodView):
         return {}
 
 
-@json_api.route('/all_users')
-def all_users():
+@json_api.route('/all_users/<puid>')
+def all_users(puid):
+    cbot = mybot.myBots.get_bot(puid)
     all_ids = set([u.puid for u in sum(
-        [g.members for g in current_bot.groups()], [])])
-    friend_ids = set([u.puid for u in current_bot.friends()])
+        [g.members for g in cbot.groups()], [])])
+    friend_ids = set([u.puid for u in cbot.friends()])
     ids = all_ids.difference(friend_ids)
     users = [u.to_dict() for u in db.session.query(User).filter(
         User.id.in_(ids)).all()]
     return {'users': users}
 
 
-@json_api.route('/all_groups')
-def all_groups():
-    uid = current_bot.self.puid
-    user = db.session.query(User).filter_by(id=uid).first()
+@json_api.route('/all_groups/<puid>')
+def all_groups(puid):
+    user = db.session.query(User).filter_by(id=puid).first()
     if not user:
         raise ApiException(errors.not_found)
     groups = [group.to_dict() for group in user.groups]

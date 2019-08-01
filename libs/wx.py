@@ -18,8 +18,15 @@ def publish(uuid, **kw):
         params = {'uuid': uuid, 'extra': kw.pop('extra', None),
                   'type': kw.pop('type', None)}
         params.update(kw)
-        print("sse public params" + params)
+        print("sse public params")
+        print(params)
         sse.publish(params, type='login')
+
+
+def logout_publish(uuid, **kw):
+    publish(uuid, **kw)
+    from .mybot import myBots
+    myBots.remove_bot_by_uuid(uuid)
 
 
 def process_qr_code(uuid, **kw):
@@ -33,7 +40,7 @@ def process_qr_code(uuid, **kw):
 
 scan_qr_code.connect(publish)
 confirm_login.connect(publish)
-logged_out.connect(publish)
+logged_out.connect(logout_publish)
 
 from wxpy import *  # noqa
 
@@ -54,7 +61,7 @@ def gen_avatar_path(puid, force=False):
         mtime = datetime.fromtimestamp(os.stat(avatar_path).st_mtime)
         if datetime.now() - mtime < timedelta(days=1) and not force:
             need_update = False
-    return avatar_url, avatar_path, need_update
+    return "http://localhost:8100"+avatar_url, avatar_path, need_update
 
 
 def get_logged_in_user(bot):

@@ -2,9 +2,9 @@ from datetime import timedelta
 from celery.task import periodic_task
 from celery.task.control import revoke
 
-from wechat.celery import app
+from wechat.celery import app, at_start
 from wxpy.exceptions import ResponseError
-from itchat.signals import logged_out
+from itchat.signals import logged_in, logged_out
 
 from wxpy.signals import stopped
 from libs.wx import gen_avatar_path, get_bot
@@ -17,14 +17,16 @@ from models.messaging import Notification
 from libs.mybot import myBots
 
 
+# sender 是 uuid
 def restart_listener(sender, **kw):
-    task_id = r.get(LISTENER_TASK_KEY)
+    task_id = r.get(LISTENER_TASK_KEY + sender)
     if task_id:
         revoke(str(task_id, 'utf-8'))
     task_id = app.send_task('wechat.tasks.listener', [sender])
-    r.set(LISTENER_TASK_KEY, task_id)
+    r.set(LISTENER_TASK_KEY + sender, task_id)
 
 
+logged_in.connect(at_start)
 logged_out.connect(restart_listener)
 stopped.connect(restart_listener)
 MP_FIELD = ['nick_name', 'signature', 'province', 'city']
@@ -32,7 +34,8 @@ USER_FIELD = MP_FIELD + ['sex']
 # bot = get_bot()
 
 
-def _retrieve_data(bot, update=False):
+def _retrieve_data(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     _update_contact(bot, update)
     _update_group(bot, update)
     _update_mp(bot, update)
@@ -145,33 +148,40 @@ def _update_contact(bot, update=False):
 
 
 @app.task
-def listener(bot):
-    # bot = myBots.get_bot(bot_id)
+def listener(bot_id):
+    print(bot_id)
+
     # from libs.listener import bot
     with json_api.app_context():
+        bot = myBots.get_bot(bot_id)
         bot.join()
 
 
 @app.task
-def retrieve_data(bot):
+def retrieve_data(bot_id):
+
     with json_api.app_context():
+        bot = myBots.get_bot(bot_id)
         _retrieve_data(bot, True)
 
 
 @app.task
-def update_contact(bot, update=False):
+def update_contact(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     with json_api.app_context():
         _update_contact(bot, update=update)
 
 
 @app.task
-def update_group(bot, update=False):
+def update_group(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     with json_api.app_context():
         _update_group(bot, update=update)
 
 
 @app.task
-def update_mp(bot, update=False):
+def update_mp(bot_id, update=False):
+    bot = myBots.get_bot(bot_id)
     with json_api.app_context():
         _update_mp(bot, update=update)
 

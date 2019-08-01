@@ -10,6 +10,7 @@ class MyBot:
 
     def __init__(self):
         self.bots = {}
+        self.uuidMap = {}
         self.default_bot = None
 
     def get_bot(self, bot_id):
@@ -20,6 +21,11 @@ class MyBot:
             logger.info("没有指定的bot")
             return None
 
+    def get_bot_by_uuid(self, uuid):
+        puid = self.uuidMap[uuid]
+        if puid:
+            self.get_bot(puid)
+
     def create_bot(self):
         bot_id = uuid.uuid1()
         here = os.path.abspath(os.path.dirname(__file__))
@@ -28,15 +34,22 @@ class MyBot:
         bot.enable_puid()
         bot.messages.max_history = 0
         self.add_bot(bot.self.puid, bot)
+        # 通过uuid找到puid，再找到bot，再对bot操作
+        self.uuidMap[bot.core.uuid] = bot.self.puid
         return bot_id, bot
 
-    def add_bot(self, bot_id, bot):
-        self.bots[bot_id] = bot
+    def add_bot(self, puid, bot):
+        self.bots[puid] = bot
         from .mylistener import init_listener
         init_listener(bot)
 
     def remove_bot(self, bot_puid):
         del self.bots[bot_puid]
+
+    def remove_bot_by_uuid(self, uuid):
+        puid = self.uuidMap[uuid]
+        if puid:
+            self.remove_bot(puid)
 
     def do_register(self, func, chats=None, msg_types=None,
                     except_self=True, run_async=True, enabled=True):
