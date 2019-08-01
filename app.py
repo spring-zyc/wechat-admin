@@ -1,7 +1,8 @@
 from collections import OrderedDict
 
 from flask import Flask
-from werkzeug.wsgi import DispatcherMiddleware, SharedDataMiddleware
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.shared_data import SharedDataMiddleware
 
 import config
 from ext import sse

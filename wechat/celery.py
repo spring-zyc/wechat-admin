@@ -7,7 +7,7 @@ app = Celery('wechat', include=['wechat.tasks'])
 app.config_from_object('wechat.celeryconfig')
 
 
-@worker_ready.connect
+# @worker_ready.connect
 def at_start(sender, **k):
     with sender.app.connection() as conn:  # noqa
         task_id = sender.app.send_task('wechat.tasks.listener')

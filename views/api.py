@@ -112,6 +112,9 @@ def error_handler(error):
 def login_wx():
     bot_id, bot = mybot.myBots.create_bot()
     wxuser = get_logged_in_user(bot)
+    from wechat.tasks import retrieve_data, listener
+    listener.delay(bot)
+    retrieve_data.delay(bot)
     return {"code": 600, "msg": "微信登录完成", "data": wxuser}
 
 
@@ -163,7 +166,7 @@ def user_info():
         return {'code': 601, 'msg': "获取用户信息失败！", 'data': e}
 
 
-@json_api.route('/logout/<bot_id>', methods=['post'])
+@json_api.route('/logout/wx/<bot_id>', methods=['post'])
 def logout(bot_id):
     try:
         # _wx_ctx_stack.pop()

@@ -20,6 +20,10 @@ class Notification:
         return r.scard(NOTIFICATION_KEY.format(receiver_id=rid))
 
     @staticmethod
+    def getAll(rid):
+        return r.scard(NOTIFICATION_KEY.format(receiver_id=rid))
+
+    @staticmethod
     def clean_by_receiver_id(rid):
         r.delete(NOTIFICATION_KEY.format(receiver_id=rid))
 

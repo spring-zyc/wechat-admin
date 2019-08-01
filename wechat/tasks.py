@@ -32,8 +32,7 @@ USER_FIELD = MP_FIELD + ['sex']
 # bot = get_bot()
 
 
-def _retrieve_data(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+def _retrieve_data(bot, update=False):
     _update_contact(bot, update)
     _update_group(bot, update)
     _update_mp(bot, update)
@@ -146,37 +145,33 @@ def _update_contact(bot, update=False):
 
 
 @app.task
-def listener(bot_id):
-    bot = myBots.get_bot(bot_id)
+def listener(bot):
+    # bot = myBots.get_bot(bot_id)
     # from libs.listener import bot
     with json_api.app_context():
         bot.join()
 
 
 @app.task
-def retrieve_data(bot_id):
-    bot = myBots.get_bot(bot_id)
+def retrieve_data(bot):
     with json_api.app_context():
         _retrieve_data(bot, True)
 
 
 @app.task
-def update_contact(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+def update_contact(bot, update=False):
     with json_api.app_context():
         _update_contact(bot, update=update)
 
 
 @app.task
-def update_group(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+def update_group(bot, update=False):
     with json_api.app_context():
         _update_group(bot, update=update)
 
 
 @app.task
-def update_mp(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+def update_mp(bot, update=False):
     with json_api.app_context():
         _update_mp(bot, update=update)
 
