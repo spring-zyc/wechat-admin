@@ -12,8 +12,8 @@ import views.errors as errors
 from views.utils import ApiResult
 from views.exceptions import ApiException
 import views.settings as settings
-from libs.globals import current_bot, _wx_ctx_stack
-import libs.mybot as mybot
+from libs.globals import current_bots as mybot, _wx_ctx_stack
+# import libs.mybot as mybot
 from libs.wx import get_logged_in_user
 from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
@@ -111,11 +111,11 @@ def error_handler(error):
 @json_api.route('/login/wx', methods=['get'])
 @check_token
 def login_wx():
-    bot_id, bot = mybot.myBots.create_bot()
+    bot_id, bot = mybot.create_bot()
     wxuser = get_logged_in_user(bot)
     from wechat.tasks import listener, retrieve_data
-    listener.delay(bot.self.puid)
-    retrieve_data.delay(bot.self.puid)
+    listener.delay(bot_id)
+    retrieve_data.delay(bot_id)
     return {"code": 600, "msg": "微信登录完成", "data": wxuser}
 
 
@@ -124,7 +124,7 @@ def login_wx():
 @json_api.route('/wxes', methods=['get'])
 def get_wx():
     r = [get_logged_in_user(bot)
-         for bot in mybot.myBots.bots.values()]
+         for bot in mybot.bots.values()]
     sse.publish({"msg": "test"}, type='test')
     return {'code': 600, 'msg': "bot列表获取成功", 'data': r}
 
@@ -172,10 +172,10 @@ def user_info():
 def logout(puid):
     try:
         # _wx_ctx_stack.pop()
-        bot = mybot.myBots.get_bot(puid)
+        bot = mybot.get_bot(puid)
         if bot:
             bot.logout()
-            mybot.myBots.remove_bot(puid)
+            mybot.remove_bot(puid)
             for f in glob.glob('{}/bot_{}.pkl'.format(here,bot_id)):
                 try:
                     os.remove(f)
@@ -346,7 +346,7 @@ class UserAPI(MethodView):
 
 @json_api.route('/all_users/<puid>')
 def all_users(puid):
-    cbot = mybot.myBots.get_bot(puid)
+    cbot = mybot.get_bot(puid)
     all_ids = set([u.puid for u in sum(
         [g.members for g in cbot.groups()], [])])
     friend_ids = set([u.puid for u in cbot.friends()])
@@ -404,13 +404,13 @@ def send_message():
     return {}
 
 
-@json_api.route('/messages')
-def messages():
+@json_api.route('/messages/<puid>')
+def messages(puid):
     page = request.args.get('page', 1, type=int)
     page_size = request.args.get('page_size', 20, type=int)
     type = request.args.get('type', '')
     query = db.session.query
-    uid = current_bot.self.puid
+    uid = puid
     if type:
         if not isinstance(type, int):
             type = TYPE_TO_ID_MAP.get(type, 0)
@@ -435,15 +435,15 @@ def readall():
     return {}
 
 
-@json_api.route('/flush/<bot_id>', methods=['post'])
-def flush(bot_id):
+@json_api.route('/flush/<puid>', methods=['post'])
+def flush(puid):
     data = request.get_json()
     type = data['type']
     from wechat.tasks import update_contact, update_group
     if type == 'contact':
-        update_contact.delay(bot_id, True)
+        update_contact.delay(mybot.get_bot_id(puid), True)
     elif type == 'group':
-        update_group.delay(bot_id, True)
+        update_group.delay(mybot.get_bot_id(puid), True)
 
     return {}
 

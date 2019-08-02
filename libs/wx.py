@@ -45,9 +45,9 @@ logged_out.connect(logout_publish)
 from wxpy import *  # noqa
 
 
-def get_bot():
-    bot = Bot('bot.pkl', qr_path=os.path.join(
-        here, '../static/img/qr_code.png'), console_qr=None)
+def get_bot(bot_id):
+    bot = Bot('bot_{}.pkl'.format(bot_id), qr_path=os.path.join(
+        here, '../static/img/qr_code_{}.png'.format(bot_id)), console_qr=None)
     bot.enable_puid()
     bot.messages.max_history = 0
     return bot

@@ -14,7 +14,7 @@ from app import app as sse_api
 from ext import db, sse
 from models.core import User, Group, MP  # noqa
 from models.messaging import Notification
-from libs.mybot import myBots
+from libs.globals import current_bots
 
 
 # sender 是 uuid
@@ -26,16 +26,14 @@ def restart_listener(sender, **kw):
     r.set(LISTENER_TASK_KEY + sender, task_id)
 
 
-logged_in.connect(at_start)
-logged_out.connect(restart_listener)
-stopped.connect(restart_listener)
+# logged_out.connect(restart_listener)
+# stopped.connect(restart_listener)
 MP_FIELD = ['nick_name', 'signature', 'province', 'city']
 USER_FIELD = MP_FIELD + ['sex']
 # bot = get_bot()
 
 
-def _retrieve_data(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+def _retrieve_data(bot, update=False):
     _update_contact(bot, update)
     _update_group(bot, update)
     _update_mp(bot, update)
@@ -149,46 +147,44 @@ def _update_contact(bot, update=False):
 
 @app.task
 def listener(bot_id):
-    print(bot_id)
-
     # from libs.listener import bot
     with json_api.app_context():
-        bot = myBots.get_bot(bot_id)
+        bot = get_bot(bot_id)
+        print(bot)
         bot.join()
 
 
 @app.task
 def retrieve_data(bot_id):
-
+    bot = get_bot(bot_id)
     with json_api.app_context():
-        bot = myBots.get_bot(bot_id)
         _retrieve_data(bot, True)
 
 
 @app.task
 def update_contact(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+    bot = get_bot(bot_id)
     with json_api.app_context():
         _update_contact(bot, update=update)
 
 
 @app.task
 def update_group(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+    bot = get_bot(bot_id)
     with json_api.app_context():
         _update_group(bot, update=update)
 
 
 @app.task
 def update_mp(bot_id, update=False):
-    bot = myBots.get_bot(bot_id)
+    bot = get_bot(bot_id)
     with json_api.app_context():
         _update_mp(bot, update=update)
 
 
-@periodic_task(run_every=timedelta(seconds=10), time_limit=2)
+# @periodic_task(run_every=timedelta(seconds=10), time_limit=2)
 def send_notify():
-    for bot_id, bot in myBots.bots:
+    for bot_id, bot in current_bots.bots:
         count = Notification.count_by_receiver_id(bot.self.puid)
         with sse_api.app_context():
             sse.publish({'puid': bot.self.puid, 'count': count}, type='notification')

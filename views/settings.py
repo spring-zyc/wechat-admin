@@ -6,7 +6,7 @@ from flask.blueprints import Blueprint
 from ext import db
 from models.core import User
 from models.setting import GroupSettings
-from libs.globals import current_bot
+from libs.globals import current_bots
 
 bp = Blueprint('settings', __name__, url_prefix='/settings')
 
@@ -19,6 +19,7 @@ class GroupAPI(MethodView):
         user = query(User).get(uid)
 
         data = {
+
             'users': [u.to_dict() for u in user.friends],
             'groups': [group.to_dict() for group in user.groups],
             'mps': [mp.to_dict() for mp in user.mps]
