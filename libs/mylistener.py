@@ -13,7 +13,7 @@ from models.setting import GroupSettings
 from models.redis import db as r
 from models.core import User
 from models.messaging import Message, Notification, db
-
+from loguru import logger
 
 class SettingWrapper:
 
@@ -150,10 +150,11 @@ def init_listener(bot):
         msg.chat.remove_members([to_kick])
         return '成功移出 @{}'.format(to_kick.nick_name)
 
-    @bot.register(msg_types=all_types, except_self=False)
+    @bot.register(msg_types=all_types, except_self=True)
     def send_msg(m):
         # wxpy还不支持未命名的群聊消息
         # 先忽略腾讯新闻之类发的信息
+        logger.info("收到消息")
         if m.receiver.name is None or m.sender is None:
             return
         msg_type = TYPE_TO_ID_MAP.get(m.type, 0)

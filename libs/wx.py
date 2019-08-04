@@ -25,8 +25,8 @@ def publish(uuid, **kw):
 
 def logout_publish(uuid, **kw):
     publish(uuid, **kw)
-    from .mybot import myBots
-    myBots.remove_bot_by_uuid(uuid)
+    from .globals import current_bots
+    current_bots.remove_bot_by_uuid(uuid)
 
 
 def process_qr_code(uuid, **kw):

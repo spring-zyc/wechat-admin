@@ -20,8 +20,13 @@ class Notification:
         return r.scard(NOTIFICATION_KEY.format(receiver_id=rid))
 
     @staticmethod
-    def getAll(rid):
-        return r.scard(NOTIFICATION_KEY.format(receiver_id=rid))
+    def get_all():
+        l = r.keys('notification*')
+        ret = []
+        for i in l:
+            ret.append({"puid": str(i).split(":")[1],
+                        "count": r.scard(i)})
+        return ret
 
     @staticmethod
     def clean_by_receiver_id(rid):

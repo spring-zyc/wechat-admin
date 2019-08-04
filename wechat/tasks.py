@@ -15,6 +15,7 @@ from ext import db, sse
 from models.core import User, Group, MP  # noqa
 from models.messaging import Notification
 from libs.globals import current_bots
+from loguru import logger
 
 
 # sender 是 uuid
@@ -182,9 +183,10 @@ def update_mp(bot_id, update=False):
         _update_mp(bot, update=update)
 
 
-# @periodic_task(run_every=timedelta(seconds=10), time_limit=2)
+@periodic_task(run_every=timedelta(seconds=10), time_limit=2)
 def send_notify():
+    logger.info("Notifaction Send")
     for bot_id, bot in current_bots.bots:
-        count = Notification.count_by_receiver_id(bot.self.puid)
+        count = Notification.get_all()
         with sse_api.app_context():
-            sse.publish({'puid': bot.self.puid, 'count': count}, type='notification')
+            sse.publish(count, type='notification')

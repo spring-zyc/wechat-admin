@@ -1,6 +1,6 @@
 from wxpy import Bot
 from wxpy.api.messages import MessageConfig
-from libs.wx import get_bot
+from libs.wx import get_bot as get_wx_bot
 
 from loguru import logger
 import uuid
@@ -35,7 +35,7 @@ class MyBot:
         bid = bot_id
         if bot_id is None:
             bid = str(uuid.uuid1())
-        bot = get_bot(bot.self.puid)
+        bot = get_wx_bot(bid)
         self.add_bot(bot.self.puid, bot)
         # 通过puid找到bot_id,然后在调用wx.get_bot找到已经登录的bot
         self.botIdMap[bot.self.puid] = bid
@@ -66,4 +66,4 @@ class MyBot:
         return self.default_bot
 
 
-# myBots = MyBot()
+myBots = MyBot()

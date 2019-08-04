@@ -54,9 +54,10 @@ class User(CoreMixin, db.Model):
     signature = db.Column(db.String(512), default='')
     province = db.Column(db.String(20), default='')
     city = db.Column(db.String(20), default='')
-    name = db.Column(db.String(20), default='') # name mobile userId_in_order 来自定单系统
+    name = db.Column(db.String(20), default='')  # name mobile userId_in_order 来自定单系统
     mobile = db.Column(db.String(20), default='')
     userId_in_order = db.Column(db.Integer)
+    open_id = db.Column(db.String(100), default='')
     groups = db.relationship('Group', secondary=group_relationship,
                              backref='members')
     mps = db.relationship('MP', secondary=mp_relationship,

@@ -13,8 +13,8 @@ bp = Blueprint('settings', __name__, url_prefix='/settings')
 
 class GroupAPI(MethodView):
 
-    def get(self):
-        uid = current_bot.self.puid
+    def get(self, puid):
+        uid = puid
         query = db.session.query
         user = query(User).get(uid)
 
@@ -31,9 +31,9 @@ class GroupAPI(MethodView):
                                 set(str(u, 'u8') for u in data['creators']))
         return data
 
-    def put(self):
+    def put(self, puid):
         data = request.get_json()
-        data['id'] = current_bot.self.puid
+        data['id'] = puid
         creators = data.pop('creators', [])
         mp_forward = data.pop('mp_forward', [])
         obj = GroupSettings.create(**data)
@@ -48,4 +48,4 @@ class GroupAPI(MethodView):
         return {}
 
 
-bp.add_url_rule('/group', view_func=GroupAPI.as_view('group_settings'))
+bp.add_url_rule('/group/<puid>', view_func=GroupAPI.as_view('group_settings'))

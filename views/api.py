@@ -12,8 +12,8 @@ import views.errors as errors
 from views.utils import ApiResult
 from views.exceptions import ApiException
 import views.settings as settings
-from libs.globals import current_bots as mybot, _wx_ctx_stack
-# import libs.mybot as mybot
+# from libs.globals import current_bots as mybot, _wx_ctx_stack
+from libs.mybot import myBots as mybot
 from libs.wx import get_logged_in_user
 from libs.consts import TYPE_TO_ID_MAP
 from ext import db, sse
@@ -112,6 +112,7 @@ def error_handler(error):
 @check_token
 def login_wx():
     bot_id, bot = mybot.create_bot()
+    logger.info("微信登录完成")
     wxuser = get_logged_in_user(bot)
     from wechat.tasks import listener, retrieve_data
     listener.delay(bot_id)
@@ -160,7 +161,7 @@ def user_info():
     try:
         user = Auth.identify(request)
         if user[0] == 0:
-            return {'code': 600, 'msg': "获取用户信息成功！", 'data': serialize(user[1])}
+            return {'code': 600, 'msg': "获取用户信息成功！", 'data': user[1].to_dict()}
         else:
             return {'code': 601, 'msg': "获取用户信息失败！", 'data': None}
     except Exception as e:
@@ -196,10 +197,11 @@ class UsersAPI(MethodView):
         page_size = request.args.get('page_size', 20, type=int)
         type = request.args.get('type', 'contact')
         group_id = request.args.get('gid', '')
+        puid = request.args.get('puid', '')
         if not group_id:
             type = 'contact'
         q = request.args.get('q', '')
-        uid = current_bot.self.puid
+        uid = puid
         query = db.session.query
         if type == 'contact':
             user = query(User).get(uid)
@@ -292,9 +294,9 @@ class GroupsAPI(MethodView):
         page = request.args.get('page', 1, type=int)
         page_size = request.args.get('page_size', 20, type=int)
         q = request.args.get('q', '')
-        uid = current_bot.self.puid
+        puid = request.args.get('puid', None)
         query = db.session.query
-        query = query(Group).filter(Group.owner_id == uid)
+        query = query(Group).filter(Group.owner_id == puid)
         if q:
             groups = query.filter(Group.nick_name.like('%{}%'.format(q)))
             total = groups.count()
@@ -344,19 +346,18 @@ class UserAPI(MethodView):
         return {}
 
 
-@json_api.route('/all_users/<puid>')
-def all_users(puid):
-    cbot = mybot.get_bot(puid)
+@json_api.route('/all_users')
+def all_users():
     all_ids = set([u.puid for u in sum(
-        [g.members for g in cbot.groups()], [])])
-    friend_ids = set([u.puid for u in cbot.friends()])
+        [g.members for g in bot.groups()], [])])
+    friend_ids = set([u.puid for u in bot.friends()])
     ids = all_ids.difference(friend_ids)
     users = [u.to_dict() for u in db.session.query(User).filter(
         User.id.in_(ids)).all()]
     return {'users': users}
 
 
-@json_api.route('/all_groups/<puid>')
+@json_api.route('/all_groups')
 def all_groups(puid):
     user = db.session.query(User).filter_by(id=puid).first()
     if not user:
@@ -404,13 +405,13 @@ def send_message():
     return {}
 
 
-@json_api.route('/messages/<puid>')
-def messages(puid):
+@json_api.route('/messages')
+def messages():
     page = request.args.get('page', 1, type=int)
     page_size = request.args.get('page_size', 20, type=int)
     type = request.args.get('type', '')
     query = db.session.query
-    uid = puid
+    puid = request.args.get('puid', None)
     if type:
         if not isinstance(type, int):
             type = TYPE_TO_ID_MAP.get(type, 0)
@@ -419,7 +420,7 @@ def messages(puid):
     else:
         ms = query(Message)
         total = ms.count()
-    ms = ms.filter(Message.receiver_id == uid).order_by(
+    ms = ms.filter(Message.receiver_id == puid).order_by(
         Message.id.desc()).offset((page - 1) * page_size).limit(
             page_size).all()
     return {
@@ -428,17 +429,18 @@ def messages(puid):
     }
 
 
-@json_api.route('/readall', methods=['post'])
-def readall():
-    uid = current_bot.self.puid
-    Notification.clean_by_receiver_id(uid)
+@json_api.route('/readall/<puid>', methods=['post'])
+def readall(puid):
+    # uid = current_bot.self.puid
+    Notification.clean_by_receiver_id(puid)
     return {}
 
 
-@json_api.route('/flush/<puid>', methods=['post'])
-def flush(puid):
+@json_api.route('/flush', methods=['post'])
+def flush():
     data = request.get_json()
     type = data['type']
+    puid = data['puid']
     from wechat.tasks import update_contact, update_group
     if type == 'contact':
         update_contact.delay(mybot.get_bot_id(puid), True)
