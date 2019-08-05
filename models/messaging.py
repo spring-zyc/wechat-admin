@@ -22,10 +22,9 @@ class Notification:
     @staticmethod
     def get_all():
         l = r.keys('notification*')
-        ret = []
+        ret = {}
         for i in l:
-            ret.append({"puid": str(i).split(":")[1],
-                        "count": r.scard(i)})
+            ret[str(i).split(":")[1][:-1]] = r.scard(i)
         return ret
 
     @staticmethod

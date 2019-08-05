@@ -154,7 +154,7 @@ def init_listener(bot):
     def send_msg(m):
         # wxpy还不支持未命名的群聊消息
         # 先忽略腾讯新闻之类发的信息
-        logger.info("收到消息")
+        logger.info("收到消息,接收者：{}".format(m.receiver.name))
         if m.receiver.name is None or m.sender is None:
             return
         msg_type = TYPE_TO_ID_MAP.get(m.type, 0)

@@ -61,7 +61,7 @@ def gen_avatar_path(puid, force=False):
         mtime = datetime.fromtimestamp(os.stat(avatar_path).st_mtime)
         if datetime.now() - mtime < timedelta(days=1) and not force:
             need_update = False
-    return "http://localhost:8100"+avatar_url, avatar_path, need_update
+    return avatar_url, avatar_path, need_update
 
 
 def get_logged_in_user(bot):

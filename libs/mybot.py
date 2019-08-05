@@ -29,7 +29,7 @@ class MyBot:
             self.get_bot(puid)
 
     def get_bot_id(self, puid):
-        return self.botIdMap[bot_id]
+        return self.botIdMap[puid]
 
     def create_bot(self, bot_id=None):
         bid = bot_id

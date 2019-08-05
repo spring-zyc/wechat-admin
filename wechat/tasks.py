@@ -2,11 +2,11 @@ from datetime import timedelta
 from celery.task import periodic_task
 from celery.task.control import revoke
 
-from wechat.celery import app, at_start
+from wechat.celery import app
 from wxpy.exceptions import ResponseError
-from itchat.signals import logged_in, logged_out
-
-from wxpy.signals import stopped
+# from itchat.signals import logged_in, logged_out
+#
+# from wxpy.signals import stopped
 from libs.wx import gen_avatar_path, get_bot
 from views.api import json_api
 from models.redis import db as r, LISTENER_TASK_KEY
@@ -14,7 +14,6 @@ from app import app as sse_api
 from ext import db, sse
 from models.core import User, Group, MP  # noqa
 from models.messaging import Notification
-from libs.globals import current_bots
 from loguru import logger
 
 
@@ -158,6 +157,8 @@ def listener(bot_id):
 @app.task
 def retrieve_data(bot_id):
     bot = get_bot(bot_id)
+    logger.info("Retrieve Data")
+    logger.info(bot)
     with json_api.app_context():
         _retrieve_data(bot, True)
 
@@ -165,6 +166,8 @@ def retrieve_data(bot_id):
 @app.task
 def update_contact(bot_id, update=False):
     bot = get_bot(bot_id)
+    logger.info("update_contact")
+    logger.info(bot)
     with json_api.app_context():
         _update_contact(bot, update=update)
 
@@ -172,6 +175,8 @@ def update_contact(bot_id, update=False):
 @app.task
 def update_group(bot_id, update=False):
     bot = get_bot(bot_id)
+    logger.info("update_group")
+    logger.info(bot)
     with json_api.app_context():
         _update_group(bot, update=update)
 
@@ -183,10 +188,10 @@ def update_mp(bot_id, update=False):
         _update_mp(bot, update=update)
 
 
-@periodic_task(run_every=timedelta(seconds=10), time_limit=2)
+@periodic_task(run_every=timedelta(seconds=20), time_limit=5)
 def send_notify():
     logger.info("Notifaction Send")
-    for bot_id, bot in current_bots.bots:
-        count = Notification.get_all()
-        with sse_api.app_context():
-            sse.publish(count, type='notification')
+    count = Notification.get_all()
+    logger.info(count)
+    with sse_api.app_context():
+        sse.publish(count, type='notification')

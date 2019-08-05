@@ -124,7 +124,7 @@ PS: 如果是本地运行，可以不使用gunicorn，直接使用Flask的多线
 登录成功后，启动Celery Beat和Worker：
 
 ```bash
-❯ venv/bin/celery -A wechat worker -l info -B
+❯ venv/bin/celery -A wechat worker -l info -B -n worker3.%h
 ```
 
 注意：第一次会拉取全部的联系人和各群聊成员列表，需要一点时间。观察终端输出了解初始化任务的完成情况。
@@ -211,7 +211,7 @@ Issue: [#9](https://github.com/dongweiming/wechat-admin/issues/9)
 ```bash
 gunicorn app:app --bind 0.0.0.0:8100 -w 10 -t 0
 ```
-
+nohup gunicorn wechat-admin.app:app --bind 0.0.0.0:8100 -w 10 -t 0 > gunicorn.out 2>&1 &
 或者不用gunicorn， 直接使用Flask的threaded参数启动：
 
 ```bash

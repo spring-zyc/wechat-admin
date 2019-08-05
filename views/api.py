@@ -68,7 +68,7 @@ def create_app():
 
 
 json_api = create_app()
-
+logger.info('create json_api {}'.format(id(json_api)))
 
 # For local test env
 @json_api.after_request
@@ -126,7 +126,6 @@ def login_wx():
 def get_wx():
     r = [get_logged_in_user(bot)
          for bot in mybot.bots.values()]
-    sse.publish({"msg": "test"}, type='test')
     return {'code': 600, 'msg': "bot列表获取成功", 'data': r}
 
 
