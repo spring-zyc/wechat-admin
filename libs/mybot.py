@@ -55,6 +55,9 @@ class MyBot:
         puid = self.uuidMap[uuid]
         if puid:
             self.remove_bot(puid)
+        else:
+            logger.info("Bot of uuid:{} not found!".format(uuid))
+            logger.info(self.uuidMap)
 
     def do_register(self, func, chats=None, msg_types=None,
                     except_self=True, run_async=True, enabled=True):

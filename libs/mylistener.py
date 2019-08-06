@@ -12,8 +12,10 @@ import libs.mybot as b
 from models.setting import GroupSettings
 from models.redis import db as r
 from models.core import User
-from models.messaging import Message, Notification, db
+from models.messaging import Message, Notification, MyNotification, db
 from loguru import logger
+from ext import sse
+
 
 class SettingWrapper:
 
@@ -150,7 +152,7 @@ def init_listener(bot):
         msg.chat.remove_members([to_kick])
         return '成功移出 @{}'.format(to_kick.nick_name)
 
-    @bot.register(msg_types=all_types, except_self=True)
+    @bot.register(msg_types=all_types, except_self=False)
     def send_msg(m):
         # wxpy还不支持未命名的群聊消息
         # 先忽略腾讯新闻之类发的信息
@@ -161,6 +163,7 @@ def init_listener(bot):
         if isinstance(m.sender, Group):
             sender_id = m.member.puid
             group_id = m.chat.puid
+            logger.info("The message is @" if m.is_at else "The message is not @")
         elif isinstance(m.sender, _MP):
             sender_id = m.sender.puid
             group_id = 0
@@ -168,6 +171,7 @@ def init_listener(bot):
         else:
             sender_id = m.sender.puid
             group_id = 0
+
         receiver_id = m.receiver.puid
         from views.api import json_api as app
         with app.app_context():
@@ -180,7 +184,11 @@ def init_listener(bot):
                 msg.file_ext = ext
                 db.session.commit()
             Notification.add(receiver_id, msg.id)
-
+            # 我消息
+            if msg.group_id == 0 and msg.msg_type != TYPE_TO_ID_MAP.get('MP'):
+                MyNotification.add(receiver_id, msg.id)
+            sse.publish(Notification.get_all(), type='notification')
+            # 公众号消息分发
             if isinstance(m.sender, _MP):
                 for mp_id, ids in settings.mp_forward:
                     if m.sender.puid == mp_id:

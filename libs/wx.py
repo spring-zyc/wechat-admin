@@ -8,6 +8,7 @@ from itchat.signals import scan_qr_code, confirm_login, logged_out
 
 from ext import sse
 from config import avatar_tmpl
+from loguru import logger
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -24,9 +25,14 @@ def publish(uuid, **kw):
 
 
 def logout_publish(uuid, **kw):
-    publish(uuid, **kw)
-    from .globals import current_bots
-    current_bots.remove_bot_by_uuid(uuid)
+    from libs.mybot import myBots
+    from views.api import logout
+    puid = myBots.uuidMap[uuid]
+    if puid:
+        logout(puid)
+        publish(puid, **kw)
+    else:
+        logger.info("puid of uuid {} not found".format(uuid))
 
 
 def process_qr_code(uuid, **kw):

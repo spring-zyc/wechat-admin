@@ -173,10 +173,12 @@ def logout(puid):
     try:
         # _wx_ctx_stack.pop()
         bot = mybot.get_bot(puid)
+        bot_id = mybot.get_bot_id(puid)
         if bot:
             bot.logout()
             mybot.remove_bot(puid)
-            for f in glob.glob('{}/bot_{}.pkl'.format(here,bot_id)):
+            del mybot.botIdMap[puid]
+            for f in glob.glob('{}/bot_{}.pkl'.format(here, bot_id)):
                 try:
                     os.remove(f)
                 except FileNotFoundError:
@@ -422,6 +424,31 @@ def messages():
     ms = ms.filter(Message.receiver_id == puid).order_by(
         Message.id.desc()).offset((page - 1) * page_size).limit(
             page_size).all()
+    return {
+        'total': total,
+        'messages': [m.to_dict() for m in ms]
+    }
+
+
+@json_api.route('/messages/my')
+def mymessages():
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
+    type = request.args.get('type', '')
+    query = db.session.query
+    puid = request.args.get('puid', None)
+    if type:
+        if not isinstance(type, int):
+            type = TYPE_TO_ID_MAP.get(type, 0)
+        ms = query(Message).filter(Message.type == type)
+        total = ms.count()
+    else:
+        ms = query(Message)
+        total = ms.count()
+    ms = ms.filter(Message.receiver_id == puid, Message.group_id == 0,
+                   Message.type != TYPE_TO_ID_MAP.get('MP')).order_by(
+        Message.id.desc()).offset((page - 1) * page_size).limit(page_size)
+    ms = ms.all()
     return {
         'total': total,
         'messages': [m.to_dict() for m in ms]

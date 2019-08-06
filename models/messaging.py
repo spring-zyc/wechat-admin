@@ -8,6 +8,7 @@ from libs.consts import ID_TO_TYPE_MAP, MP as _MP
 from libs.utils import cached_hybrid_property
 
 NOTIFICATION_KEY = 'notification:{receiver_id}'
+MY_NOTIFICATION_KEY = 'mynotification:{receiver_id}'
 
 
 class Notification:
@@ -30,6 +31,28 @@ class Notification:
     @staticmethod
     def clean_by_receiver_id(rid):
         r.delete(NOTIFICATION_KEY.format(receiver_id=rid))
+
+
+class MyNotification:
+    @staticmethod
+    def add(rid, msg_id):
+        r.sadd(MY_NOTIFICATION_KEY.format(receiver_id=rid), msg_id)
+
+    @staticmethod
+    def count_by_receiver_id(rid):
+        return r.scard(MY_NOTIFICATION_KEY.format(receiver_id=rid))
+
+    @staticmethod
+    def get_all():
+        l = r.keys('mynotification*')
+        ret = {}
+        for i in l:
+            ret[str(i).split(":")[1][:-1]] = r.scard(i)
+        return ret
+
+    @staticmethod
+    def clean_by_receiver_id(rid):
+        r.delete(MY_NOTIFICATION_KEY.format(receiver_id=rid))
 
 
 class Log(db.Model):
@@ -92,3 +115,22 @@ class Message(BaseMixin, db.Model):
         for p in ('sender', 'group', 'msg_type'):
             dct[p] = getattr(self, p)
         return dct
+
+
+class Tag(db.Model, BaseMixin):
+    __tablename__ = 'tag'
+    __table_args__ = {'mysql_charset': 'utf8mb4'}
+    id = db.Column(db.Integer, primary_key=True)
+    tag_name = db.Column(db.String(1024))
+    created_time = db.Column(db.DateTime)
+    ref_count = db.Column(db.Integer)
+    parent = db.Column(db.Integer, default='')
+    level = db.Column(db.Integer, default=0)
+
+
+tag_message = db.Table(
+    'tag_meesage',
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id')),
+    db.Column('message_id', db.Integer, db.ForeignKey('message.id')),
+    mysql_charset='utf8mb4'
+)
